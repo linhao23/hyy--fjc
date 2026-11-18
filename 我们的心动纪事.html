@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>我们的心动纪事</title>
+<style>
+    body {
+        font-family: 'PingFang SC', 'Microsoft YaHei', sans-serif;
+        background: linear-gradient(135deg, #e0f7fa, #e1bee7);
+        min-height: 100vh;
+        margin: 0;
+        padding: 40px 20px;
+        text-align: center;
+        color: #4a148c;
+    }
+    h1 {
+        font-size: 2.8em;
+        text-shadow: 2px 2px 4px rgba(74, 20, 140, 0.15);
+        margin-bottom: 30px;
+    }
+    .form-container {
+        background: rgba(255, 255, 255, 0.85);
+        padding: 25px;
+        border-radius: 20px;
+        display: inline-block;
+        box-shadow: 0 10px 30px rgba(0,0,0,0.05);
+        margin-bottom: 40px;
+        backdrop-filter: blur(10px);
+    }
+    input {
+        padding: 12px;
+        margin: 5px 10px;
+        border: 2px solid #e1bee7;
+        border-radius: 10px;
+        outline: none;
+        font-size: 1em;
+        transition: border-color 0.3s;
+    }
+    input:focus {
+        border-color: #ce93d8;
+    }
+    button {
+        padding: 12px 25px;
+        background: linear-gradient(45deg, #ab47bc, #8e24aa);
+        color: white;
+        border: none;
+        border-radius: 10px;
+        cursor: pointer;
+        font-size: 1em;
+        font-weight: bold;
+        transition: all 0.3s ease;
+        box-shadow: 0 4px 10px rgba(142, 36, 170, 0.3);
+    }
+    button:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 6px 15px rgba(142, 36, 170, 0.5);
+    }
+    .timers-container {
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: center;
+        gap: 25px;
+        max-width: 1200px;
+        margin: 0 auto;
+    }
+    .timer-card {
+        background: white;
+        width: 260px;
+        padding: 25px 20px;
+        border-radius: 20px;
+        box-shadow: 0 10px 20px rgba(0,0,0,0.06);
+        position: relative;
+        transition: transform 0.3s;
+    }
+    .timer-card:hover {
+        transform: translateY(-5px);
+    }
+    .timer-card h3 {
+        margin-top: 0;
+        color: #7b1fa2;
+        font-size: 1.3em;
+    }
+    .timer-card .status {
+        font-size: 0.95em;
+        color: #888;
+        margin-top: 15px;
+    }
+    .timer-card .days {
+        font-size: 3em;
+        font-weight: bold;
+        color: #e91e63;
+        margin: 5px 0;
+        font-family: 'Arial', sans-serif;
+    }
+    .timer-card .date-display {
+        font-size: 0.85em;
+        color: #aaa;
+        background: #f3e5f5;
+        display: inline-block;
+        padding: 4px 10px;
+        border-radius: 12px;
+    }
+    .delete-btn {
+        position: absolute;
+        top: 15px;
+        right: 15px;
+        background: #ff5252;
+        padding: 5px 10px;
+        font-size: 12px;
+        box-shadow: none;
+    }
+    .delete-btn:hover {
+        background: #d50000;
+        transform: none;
+    }
+</style>
+</head>
+<body>
+    <h1>⏳ 我们的心动纪事 ⏳</h1>
+    
+    <div class="form-container">
+        <input type="text" id="eventName" placeholder="例如：第一次相遇 / 她的生日" autocomplete="off">
+        <input type="date" id="eventDate">
+        <button onclick="addEvent()">保存心动节点</button>
+    </div>
+
+    <div class="timers-container" id="timers"></div>
+
+    <script>
+        // 从本地存储读取历史记录
+        let events = JSON.parse(localStorage.getItem('myLoveEvents')) || [];
+
+        function addEvent() {
+            const name = document.getElementById('eventName').value;
+            const date = document.getElementById('eventDate').value;
+            if (!name || !date) {
+                alert('请填写完整的纪念日名称和日期哦！');
+                return;
+            }
+            // 保存到数组并写入本地缓存
+            events.push({ id: Date.now(), name, date });
+            localStorage.setItem('myLoveEvents', JSON.stringify(events));
+            
+            // 清空输入框
+            document.getElementById('eventName').value = '';
+            document.getElementById('eventDate').value = '';
+            
+            renderEvents();
+        }
+
+        function deleteEvent(id) {
+            if(confirm('确定要删除这个纪念日吗？')) {
+                events = events.filter(e => e.id !== id);
+                localStorage.setItem('myLoveEvents', JSON.stringify(events));
+                renderEvents();
+            }
+        }
+
+        function renderEvents() {
+            const container = document.getElementById('timers');
+            container.innerHTML = '';
+            
+            const today = new Date();
+            today.setHours(0,0,0,0);
+
+            // 按照时间排序展示
+            const sortedEvents = [...events].sort((a, b) => new Date(a.date) - new Date(b.date));
+
+            sortedEvents.forEach(event => {
+                const eventDate = new Date(event.date);
+                eventDate.setHours(0,0,0,0);
+                
+                // 计算时间差
+                const diffTime = eventDate - today;
+                const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+                
+                const card = document.createElement('div');
+                card.className = 'timer-card';
+                
+                let statusText, daysNum;
+                if (diffDays > 0) {
+                    statusText = '距离那一天还有';
+                    daysNum = diffDays;
+                } else if (diffDays < 0) {
+                    statusText = '我们已经一起走过';
+                    daysNum = Math.abs(diffDays);
+                } else {
+                    statusText = '就是今天！';
+                    daysNum = 0;
+                }
+
+                card.innerHTML = `
+                    <button class="delete-btn" onclick="deleteEvent(${event.id})">✖</button>
+                    <h3>${event.name}</h3>
+                    <div class="date-display">${event.date}</div>
+                    <div class="status">${statusText}</div>
+                    <div class="days">${daysNum} <span style="font-size:16px; color:#666;">天</span></div>
+                `;
+                container.appendChild(card);
+            });
+        }
+
+        // 首次打开页面时进行渲染
+        renderEvents();
+    </script>
+</body>
+</html>
